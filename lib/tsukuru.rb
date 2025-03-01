@@ -4,5 +4,4 @@ require_relative "tsukuru/version"
 
 module Tsukuru
   class Error < StandardError; end
-  # Your code goes here...
 end
