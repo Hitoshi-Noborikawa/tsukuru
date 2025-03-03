@@ -138,7 +138,7 @@ module Tsukuru
 
     def generate_rspec(files, prompt)
       user_prompt = <<~TEXT
-      rspec と Capybara を使って#{prompt}のテストを書いて下さい。
+      RSpec と Capybara を使って#{prompt}のテストを書いて下さい。
       下記にテスト対象のソースコードがあります。それを参考にしてください
 
       以下の内容について、回答は必ず有効な 配列をJSON形式で出力してください。追加の解説や余計なテキストは一切含めず、JSON オブジェクトのみを返してください。
@@ -150,10 +150,22 @@ module Tsukuru
 
       client = OpenAI::Client.new
 
+      rule_file_path = Rails.root.join('.tsukururules')
+      rule_content = if File.exist?(rule_file_path)
+                       <<~PROMPT
+                         以下はこのプロジェクト固有のルールです。必ず従ってください。
+
+                         #{File.read(rule_file_path)}
+                       PROMPT
+                     end
       response = client.chat(
         parameters: {
           model: 'gpt-4o-mini',
           messages: [
+            { role: 'system', content: <<~CONTENT },
+              RSpec と Capybara を使ってテストコードを書いてください。
+              #{rule_content}
+            CONTENT
             { role: 'user', content: user_prompt },
           ]
         }
