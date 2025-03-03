@@ -19,6 +19,8 @@ module Tsukuru
         Ctrl+c: キャンセル
 
       MSG
+
+      # NOTE: 空文字で抜けるのを防ぐためにループしている
       prompt = ""
       while prompt == "" do
         prompt = reader.read_multiline('> ')
