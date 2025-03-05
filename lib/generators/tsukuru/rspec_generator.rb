@@ -7,6 +7,7 @@ module Tsukuru
       node_modules log tmp storage bin db/migrate public/assets public/uploads coverage copilot .*
     ]
     IGNORED_PATTERNS = %w[*.png *.jpg .keep *.log]
+    INITIAL_FILES = ['Gemfile', 'package.json', 'routes.rb', 'ja.yml']
 
     def create_rspec_file
       reader = TTY::Reader.new
@@ -25,56 +26,20 @@ module Tsukuru
       end
 
       puts ""
-      puts "実行中..."
+      puts "実行中・・・"
 
-      created_rspec = create_rspec(prompt)
+
+      loop_count = 0;
+      generated_rspec = analyze_needs_source_file_contents(prompt, INITIAL_FILES, loop_count)
 
       puts "\nGenerated RSpec Test Cases:\n"
-      created_rspec.each do |rspec|
-        puts "【#{rspec['description']}】"
+      generated_rspec.each do |rspec|
         puts "#{rspec['code']}\n\n"
       end
     rescue TTY::Reader::InputInterrupt
     end
 
     private
-
-    def create_rspec(prompt, max_loop_count = 3)
-      files = required_files(all_files, prompt)
-      file_contents = file_contents(files)
-      rspec_code = generate_rspec(file_contents, prompt)
-
-      loop_count = 0
-
-      loop do
-        loop_count += 1
-        break if loop_count > max_loop_count
-
-        response = analyze_missing_dependencies(rspec_code, file_contents)
-
-        if response && response['function_call']
-          function_name = response['function_call']['name']
-          arguments = JSON.parse(response['function_call']['arguments'])
-
-          if function_name == 'additional_file_contents' && arguments['file_name'].present?
-            additional_content = additional_file_contents(arguments['file_name'])
-
-            if additional_content.present?
-              file_contents << additional_content
-              rspec_code = generate_rspec(file_contents)
-            else
-              break
-            end
-          else
-            break
-          end
-        else
-          break
-        end
-      end
-
-      rspec_code
-    end
 
     def all_files
       files = []
@@ -92,18 +57,73 @@ module Tsukuru
       files
     end
 
-    def required_files(files, prompt)
+    def file_contents(file_names)
+      results = []
+      puts "参照しているファイル"
+      file_names.each do |file_name|
+        file_path = Dir.glob("#{Rails.root}/**/#{file_name}").first
+        puts file_path
+        if file_name && file_path.present? && File.exist?(file_path)
+          content = File.read(file_path)
+          results << { file_name:, content: }
+        else
+          results << { file_name:, content: nil }
+        end
+      end
+      results
+    end
+
+    def analyze_needs_source_file_contents(prompt, source_files, loop_count)
+      loop_count += 1
+
+      if loop_count > 3
+        unique_source_files = source_files.uniq
+        result_file_contents = file_contents(unique_source_files)
+        puts 'テスト作成中・・・'
+        generate_rspec(result_file_contents, prompt)
+      else
+        add_files = []
+        response = call_open_ai(prompt, source_files)
+        if response && response[0]['function']
+          file_contents = response
+
+          file_contents.each do |file_content|
+            function_name = file_content['function']['name']
+            arguments = JSON.parse(file_content['function']['arguments'])
+            if function_name == 'additional_file_contents' && arguments['file_name'].present?
+              puts "追加要求: #{arguments['file_name']}"
+              add_files << arguments['file_name']
+            end
+          end
+
+          if add_files.present?
+            source_files.concat(add_files)
+            analyze_needs_source_file_contents(prompt, source_files, loop_count)
+          end
+        end
+      end
+    end
+
+    def call_open_ai(prompt, source_file_contents)
       user_prompt = <<~TEXT
-      rspec と Capybara を使って#{prompt}のテストを書きます。
+      rspecとCapybaraを使って#{prompt}のテストを書いてください
       プロジェクト全体のファイル一覧を書きます。
+      以下に参考にすべきソースコードと、プロジェクト全体のファイル一覧を書きます。
       ファイル一覧からテストを書くのに参考にしたいファイルを教えてください。
-      ファイル一覧にはないファイルは提供できません。
-      教えてくれたら、そのファイルの中身を私から教えます。
+      必要なファイルは出来るだけ一度に全部教えてください。
 
-      以下の内容について、回答は必ず有効な 配列をJSON形式で出力してください。追加の解説や余計なテキストは一切含めず、JSON オブジェクトのみを返してください。
+      教えてくれたら、そのファイルの中身を私から教えます
 
-      #{files}
+      回答は必ず有効な 配列をJSON形式で出力してください。配列には必要なファイル名のみ含めてください。追加の解説や余計なテキストは一切含めず、JSON オブジェクトのみを返してください。
+
+      # プロジェクト全体のファイル一覧
+      #{all_files}
+
+      # 参考にするソースコード
+      #{source_file_contents}
+
       TEXT
+      system_prompt = "あなたはrspecとCapybaraを使って#{prompt}のテストを作成するアシスタントです"
 
       client = OpenAI::Client.new
 
@@ -111,27 +131,35 @@ module Tsukuru
         parameters: {
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'user', content: user_prompt },
-          ]
-        }
+            { role: 'system', content: system_prompt },
+            { role: 'user', content: user_prompt }
+          ],
+          tools: [
+            {
+              type: 'function',
+              function: {
+                name: 'additional_file_contents',
+                description: '追加で必要なファイルの内容を取得する',
+                parameters: {
+                  type: :object,
+                  properties: {
+                    file_name: {
+                      type: :string,
+                      description: "不足しているファイル名",
+                    },
+                  },
+                  required: ['file_name'],
+                },
+              },
+            }
+          ],
+          tool_choice: 'required'
+        },
       )
-      row_data = response.dig('choices', 0, 'message', 'content')
-      json_data = row_data.gsub(/```json\s*/, '').gsub(/\s*```/, '')
-      JSON.parse(json_data)
-    end
-
-    def file_contents(file_names)
-      results = {}
-      file_names.each do |file_name|
-        file_path = Dir.glob("#{Rails.root}/**/#{file_name}").first
-
-        if file_name && file_path.present? && File.exist?(file_path)
-          results[file_name] = File.read(file_path)
-        else
-          results[file_name] = nil
-        end
-      end
-      results
+      response.dig('choices', 0, 'message', 'tool_calls')
+      # row_data = response.dig('choices', 0, 'message', 'content')
+      # json_data = row_data.gsub(/```json\s*/, '').gsub(/\s*```/, '')
+      # JSON.parse(json_data)
     end
 
     def generate_rspec(files, prompt)
@@ -159,54 +187,6 @@ module Tsukuru
       row_data = response.dig('choices', 0, 'message', 'content')
       json_data = row_data.gsub(/```json\s*/, '').gsub(/\s*```/, '')
       JSON.parse(json_data)
-    end
-
-    def additional_file_contents(file_name)
-      file_path = Dir.glob("#{Rails.root}/**/#{file_name}").first
-
-      if file_name && file_path.present? && File.exist?(file_path)
-        File.read(file_path)
-      else
-        nil
-      end
-    end
-
-    def analyze_missing_dependencies(rspec_code, file_list)
-      client = OpenAI::Client.new
-      user_prompt = <<~TEXT
-        以下のテストコードから、追加で必要なファイルがあれば、additional_file_content関数を呼び出す形で指示してください。
-        必要な場合は、file_nameを引数として指定してください。
-        テストコード: #{rspec_code} 対象ファイルリスト: #{file_list}
-      TEXT
-
-      response = client.chat(
-        parameters: {
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'あなたはテストコードの依存関係解析を行うアシスタントです。' },
-            { role: 'user', content: user_prompt }
-          ],
-          functions: [
-            {
-              name: 'additional_file_content',
-              description: '追加で必要なファイルの内容を取得するための関数です',
-              parameters: {
-                type: 'object',
-                properties: {
-                  file_name: {
-                    type: 'string',
-                    description: '不足しているファイル名'
-                  }
-                },
-                required: ['file_name']
-              }
-            }
-          ],
-          function_call: 'auto',
-          temperature: 0
-        }
-      )
-      response.dig('choices', 0, 'message')
     end
   end
 end
