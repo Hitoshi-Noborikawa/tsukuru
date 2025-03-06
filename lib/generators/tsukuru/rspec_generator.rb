@@ -1,5 +1,5 @@
 require 'rails/generators'
-require 'tty-reader'
+require 'readline'
 
 module Tsukuru
   class RspecGenerator < Rails::Generators::Base
@@ -10,22 +10,23 @@ module Tsukuru
     INITIAL_FILES = ['Gemfile', 'package.json', 'routes.rb', 'ja.yml']
 
     def create_rspec_file
-      reader = TTY::Reader.new
       puts <<~MSG
 
         RSpecテストケースの内容を詳しく記述してください
-        例: 管理者が商品の本をCRUDする。
+        例: 管理者が商品の本をCRUDする
 
-        Ctrl+d: 続行
-        Ctrl+c: キャンセル
+        続行: 空行で改行
+        終了: Ctrl+C
 
       MSG
 
-      # NOTE: 空文字で抜けるのを防ぐためにループしている
-      prompt = ""
-      while prompt == "" do
-        prompt = reader.read_multiline('> ')
+      lines = []
+      loop do
+        lines << Readline.readline('> ', true)
+        break if lines.compact_blank.size > 0 && lines.last == ''
       end
+
+      prompt = lines.join("\n").strip
 
       puts ""
       puts "実行中・・・"
@@ -38,7 +39,7 @@ module Tsukuru
       generated_rspec.each do |rspec|
         puts "#{rspec['code']}\n\n"
       end
-    rescue TTY::Reader::InputInterrupt
+    rescue Interrupt
     end
 
     private
