@@ -19,10 +19,10 @@ module Tsukuru
     ].freeze
 
     def call
+      @loaded_file_paths = []
       puts <<~MSG
         プロジェクトについてのREADMEを作成します。
       MSG
-
       generate(contents(file_paths: INITIAL_FILES))
     end
 
@@ -40,6 +40,13 @@ module Tsukuru
 
             以下にこのプロジェクトの基本的な情報が含まれているファイルの内容を示します。
             このファイルに従って README に書くべき内容を作成してください。
+            必要な項目は以下の通りです。
+
+            - 本番、ステージングのURL
+            - 利用データベースの種類、バージョン ( CI 情報などから分かることがあります )
+            - 初期データの作成方法（もし方法があれば）
+            - 管理者ユーザーの作成方法
+
             既存の README がある場合は、それを参考にしてください。
             無闇に書き換えず、実際のファイルの内容と違う点のみ修正してください。
 
@@ -64,7 +71,7 @@ module Tsukuru
                     description: 'ファイルパスを Rails.root からの相対パスで指定してください。複数指定できます。ただしすでにファイルの内容を知っているパスを含めてはいけません。',
                     items: {
                       type: 'string',
-                      enum: Tsukuru::FileInspector.all_paths
+                      enum: Tsukuru::FileInspector.all_paths - @loaded_file_paths
                     }
                   }
                 },
@@ -105,6 +112,7 @@ module Tsukuru
       elsif function_name == 'generate_readme'
         generate_readme(**arguments)
       else
+        debugger
         raise 'なんで？'
       end
     end
@@ -115,7 +123,13 @@ module Tsukuru
     end
 
     def contents(file_paths:)
-      Tsukuru::FileInspector.contents(file_paths).map do
+      puts 'Retriving file contents...'
+
+      paths = file_paths - @loaded_file_paths
+      paths.each do |path|
+        puts "- #{path}"
+      end
+      Tsukuru::FileInspector.contents(paths).map do
         <<~CONTENT
 
           ```#{_1.path}

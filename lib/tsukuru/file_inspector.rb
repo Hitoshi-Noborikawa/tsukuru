@@ -31,7 +31,6 @@ module Tsukuru
       def contents(file_paths)
         results = []
         file_paths.each do |file_path|
-          puts file_path
           if File.exist?(file_path)
             results << FileContent.new(path: file_path, body: File.read(file_path))
           end
