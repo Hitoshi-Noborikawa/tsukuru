@@ -125,9 +125,8 @@ module Tsukuru
     end
 
     def generate_rspec(code, rspec_path)
-      puts code
       File.open(rspec_path, 'w') { _1.write(code) }
-      puts "#{rspec_path} generated"
+      puts "#{rspec_path} Generated"
     end
 
     def contents(file_paths:)
