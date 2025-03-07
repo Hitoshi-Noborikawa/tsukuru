@@ -135,7 +135,7 @@ module Tsukuru
         puts "- #{path}"
       end
       @loaded_file_paths += paths
-      Tsukuru::FileInspector.contents(paths).map do
+      Tsukuru::FileInspector.contents(@loaded_file_paths).map do
         <<~CONTENT
 
           ```#{_1.path}
