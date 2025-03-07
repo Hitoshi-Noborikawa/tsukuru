@@ -9,6 +9,8 @@ module Tsukuru
       'README.md',
       'Gemfile',
       'config/application.rb',
+      'config/database.yml',
+      'config/database.yml.sample',
       'config/environments/production.rb',
       'config/environments/staging.rb',
       'config/environments/development.rb',
