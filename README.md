@@ -1,5 +1,7 @@
 # Tsukuru
 RSpecテストとREADMEファイルを簡単に作成できるジェネレーター
+Tsukuruは OpenAIの gpt-4o-mini モデル を使用してRSpecとREADMEを生成します。
+ファイルを生成する際、品質を向上させるため 最大4回のリクエスト をOpenAIに送信します。
 
 ## インストール
 
@@ -35,10 +37,6 @@ rails g tsukuru:readme
 - READMEを作成するために必要なファイルを選別し、そのファイルを元にREADMEを生成します。
 - READMEファイルが 存在しない場合 は新規作成されます。
 - READMEファイルが 既に存在する場合 は上書きされます。
-
-### AIによるファイル生成
-Tsukuruは OpenAIの gpt-4o-mini モデル を使用してRSpecとREADMEを生成します。
-ファイルを生成する際、品質を向上させるため 最大4回のリクエスト をOpenAIに送信します。
 
 #### .tsukururules を使ったカスタマイズ
 生成時のプロンプトをカスタマイズするには、 .tsukururules にルールを追加できます。
