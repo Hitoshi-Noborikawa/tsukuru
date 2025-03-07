@@ -52,7 +52,7 @@ module Tsukuru
           { role: 'user', content: "RspecとCapybaraを使って#{prompt}のテストを作成してください。" }
         ],
         tools: [
-          {
+          count < 3 ? {
             type: 'function',
             function: {
               name: 'additional_file_contents',
@@ -78,7 +78,7 @@ module Tsukuru
               required: ['file_paths'],
               },
             },
-          },
+          } : nil,
           {
             type: 'function',
             function: {
@@ -107,7 +107,7 @@ module Tsukuru
                 required: ['code', 'file_path'],
               },
             },
-          },
+          }.compact,
         ],
         tool_choice: 'required'
       )
