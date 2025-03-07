@@ -3,7 +3,7 @@ require 'readline'
 
 module Tsukuru
   class RspecGenerator < Rails::Generators::Base
-    INITIAL_FILES = ['Gemfile', 'package.json', 'config/routes.rb', 'ja.yml'].freeze
+    INITIAL_FILES = ['Gemfile', 'package.json', 'config/routes.rb', 'config/locales/ja.yml'].freeze
 
     def create_rspec_file
       @loaded_file_paths = []
@@ -25,16 +25,15 @@ module Tsukuru
 
       prompt = lines.join("\n").strip
 
+      puts ''
+      puts 'Generating...'
       generate(prompt, contents(file_paths: INITIAL_FILES))
     rescue Interrupt
     end
 
     private
 
-    def generate(prompt, contents, count = 0)
-      puts ''
-      puts 'Generating...'
-      puts ''
+    def generate(prompt, file_contents, count = 0)
       response = client.chat(
         messages: [
           { role: 'system', content: <<~CONTENT },
@@ -46,7 +45,7 @@ module Tsukuru
             #{Tsukuru::FileInspector.all_paths - @loaded_file_paths}
 
             # 参考にするファイルとソースコード
-            #{contents}
+            #{file_contents}
             CONTENT
           { role: 'user', content: "RspecとCapybaraを使って#{prompt}のテストを作成してください。" }
         ],
@@ -67,17 +66,10 @@ module Tsukuru
                     description: <<~DESCRIPTION,
                       ファイルパスを Rails.root からの相対パスで指定してください。
                       複数指定できます。
-                      ただし、下記の参考にするファイルに含まれているファイルのパスを含めてはいけません。
-                      プロジェクト全体のファイル一覧内から必要なファイルを指定してください。
-
-                      # プロジェクト全体のファイル一覧
-                      #{Tsukuru::FileInspector.all_paths - @loaded_file_paths}
-
-                      # 参考にするファイル
-                      #{@loaded_file_paths}
                     DESCRIPTION
                     items: {
-                      type: 'string'
+                      type: 'string',
+                      enum: Tsukuru::FileInspector.all_paths - @loaded_file_paths
                     },
                   },
                 },
@@ -99,7 +91,11 @@ module Tsukuru
                 properties: {
                   code: {
                     type: 'string',
-                    description: "#{prompt}をテストするRspecのコードを返してください。",
+                    description: <<~DESCRIPTION,
+                      #{prompt}をテストするRspecのコードを返してください。
+                      RailsのI18nの日本語ファイルはja.ymlを使用しています。
+                      これを元に画面を作成しているので、Rspecのコードを書く際にはja.ymlを値を使用してください。
+                    DESCRIPTION
                   },
                   file_path: {
                     type: 'string',
@@ -120,6 +116,7 @@ module Tsukuru
         count += 1
         generate(prompt, contents(**arguments), count)
       elsif function_name == 'generate_rspec'
+        puts 'generate_rspec'
         generate_rspec(arguments[:code], arguments[:file_path])
       else
         debugger
@@ -128,18 +125,17 @@ module Tsukuru
     end
 
     def generate_rspec(code, rspec_path)
+      puts code
       File.open(rspec_path, 'w') { _1.write(code) }
       puts "#{rspec_path} generated"
     end
 
     def contents(file_paths:)
-      puts 'Retriving file contenst...'
-
       paths = file_paths - @loaded_file_paths
       paths.each do |path|
-        @loaded_file_paths << path
         puts "- #{path}"
       end
+      @loaded_file_paths += paths
       Tsukuru::FileInspector.contents(paths).map do
         <<~CONTENT
 
