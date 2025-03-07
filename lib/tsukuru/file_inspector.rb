@@ -8,7 +8,7 @@ module Tsukuru
       IGNORED_DIRS = %w[
         node_modules log tmp storage bin db/migrate public/assets public/uploads coverage copilot .*
       ].freeze
-      IGNORED_PATTERNS = %w[*.png *.jpg .keep *.log *.lock].freeze
+      IGNORED_PATTERNS = %w[*.png *.jpg .keep *.log *.lock *.yml.enc].freeze
       # TODO: ja.ymlは後方一致で取得できるようにしたい
       INITIAL_FILES = ['Gemfile', 'package.json', 'routes.rb', 'ja.yml'].freeze
 
