@@ -24,13 +24,26 @@ module Tsukuru
       @loaded_file_paths = []
       puts <<~MSG
         プロジェクトについてのREADMEを作成します。
+
+        特に含めたい内容があれば指示してください。
+
       MSG
-      generate(contents(file_paths: INITIAL_FILES))
+
+      lines = []
+      loop do
+        lines << Readline.readline('> ', true)
+        break if lines.last == ''
+      end
+
+      user_prompt = lines.join("\n").strip
+
+      generate(user_prompt, contents(file_paths: INITIAL_FILES))
+    rescue Interrupt
     end
 
     private
 
-    def generate(contents, count = 0)
+    def generate(user_prompt, contents, count = 0)
       puts ''
       puts 'Generating...'
       puts ''
@@ -54,7 +67,10 @@ module Tsukuru
 
             #{contents}
           CONTENT
-          { role: 'user', content: 'READMEを記載してください。' }
+          { role: 'user', content: <<~CONTENT }
+            READMEを記載してください。
+            #{user_prompt}
+          CONTENT
         ],
         tools: [
           {
@@ -70,7 +86,7 @@ module Tsukuru
                 properties: {
                   file_paths: {
                     type: 'array',
-                    description: 'ファイルパスを Rails.root からの相対パスで指定してください。複数指定できます。ただしすでにファイルの内容を知っているパスを含めてはいけません。',
+                    description: 'ファイルパスを Rails.root からの相対パスで指定してください。複数指定できます。',
                     items: {
                       type: 'string',
                       enum: Tsukuru::FileInspector.all_paths - @loaded_file_paths
@@ -114,8 +130,7 @@ module Tsukuru
       elsif function_name == 'generate_readme'
         generate_readme(**arguments)
       else
-        debugger
-        raise 'なんで？'
+        raise "Max count error #{tool_calls}"
       end
     end
 
@@ -125,8 +140,6 @@ module Tsukuru
     end
 
     def contents(file_paths:)
-      puts 'Retriving file contents...'
-
       paths = file_paths - @loaded_file_paths
       paths.each do |path|
         puts "- #{path}"
