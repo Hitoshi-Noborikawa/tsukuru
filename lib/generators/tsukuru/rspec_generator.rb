@@ -37,8 +37,7 @@ module Tsukuru
       response = client.chat(
         messages: [
           { role: 'system', content: <<~CONTENT },
-            あなたはRspecとCapybaraを使って#{prompt}のテストを書くツールです。
-            このプロジェクトについてのRspecとCapybaraを使った#{prompt}のテストを作成してください。
+            あなたはRspecとCapybaraを使って#{prompt}を書くツールです。
             以下に参考にすべきソースコードと、プロジェクト全体のファイル一覧を書きます。
 
             # プロジェクト全体のファイル一覧
@@ -57,7 +56,7 @@ module Tsukuru
             function: {
               name: 'additional_file_contents',
               description: <<~DESCRIPTION,
-                RspecとCapybaraを使って#{prompt}のテストを正確に書くため、プロジェクトのファイル内容を把握するための関数です。
+                RspecとCapybaraを使って#{prompt}するテストを正確に書くため、プロジェクトのファイル内容を把握するための関数です。
                 引数には必要なファイルのパスを渡します。
               DESCRIPTION
               parameters: {
@@ -84,7 +83,7 @@ module Tsukuru
             function: {
               name: 'generate_rspec',
               description: <<~DESCRIPTION,
-                RspecとCapybaraを使って#{prompt}をテストするコードを実際に生成するための関数です。
+                RspecとCapybaraを使って#{prompt}するコードを実際に生成するための関数です。
                 引数codeにはRspecコードを返します。
                 引数code_pathには引数codeのRspecコードを作成するファイルパスを返します。
               DESCRIPTION
@@ -94,21 +93,21 @@ module Tsukuru
                   code: {
                     type: 'string',
                     description: <<~DESCRIPTION,
-                      #{prompt}をテストするRspecのコードを返してください。
+                      #{prompt}するRspecのコードを返してください。
                       RailsのI18nの日本語ファイルはja.ymlを使用しています。
                       これを元に画面を作成しているので、Rspecのコードを書く際にはja.ymlを値を使用してください。
                     DESCRIPTION
                   },
                   file_path: {
                     type: 'string',
-                    description: "#{prompt}をテストするRspecのファイルパスを返してください。",
+                    description: "#{prompt}するRspecのファイルパスを返してください。",
                   },
                 },
                 required: ['code', 'file_path'],
               },
             },
-          }.compact,
-        ],
+          },
+        ].compact,
         tool_choice: 'required'
       )
       tool_calls = response.dig('choices', 0, 'message', 'tool_calls')
