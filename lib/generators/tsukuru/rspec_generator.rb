@@ -46,6 +46,8 @@ module Tsukuru
 
             # 参考にするファイルとソースコード
             #{file_contents}
+
+            #{rule_content}
             CONTENT
           { role: 'user', content: "RspecとCapybaraを使って#{prompt}のテストを作成してください。" }
         ],
@@ -112,15 +114,13 @@ module Tsukuru
       tool_calls = response.dig('choices', 0, 'message', 'tool_calls')
       function_name = tool_calls.dig(0, 'function', 'name')
       arguments = JSON.parse(tool_calls.dig(0, 'function', 'arguments')).transform_keys(&:to_sym)
-      if function_name == 'additional_file_contents' && count < 3
+      if function_name == 'additional_file_contents' && count < 4
         count += 1
         generate(prompt, contents(**arguments), count)
       elsif function_name == 'generate_rspec'
-        puts 'generate_rspec'
         generate_rspec(arguments[:code], arguments[:file_path])
       else
-        debugger
-        raise 'generate_rspecされないよ'
+        raise '問題が発生しました。もう一度やり直してください。'
       end
     end
 
@@ -142,6 +142,19 @@ module Tsukuru
           #{_1.body}
           ```
         CONTENT
+      end
+    end
+
+    def rule_content
+      rule_file_path = Rails.root.join('.tsukururules')
+      if File.exist?(rule_file_path)
+        <<~PROMPT
+          以下はこのプロジェクト固有のルールです。必ず従ってください。
+
+          #{File.read(rule_file_path)}
+        PROMPT
+      else
+        ''
       end
     end
 
