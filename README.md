@@ -1,35 +1,65 @@
 # Tsukuru
+RSpecテストとREADMEファイルを簡単に作成できるジェネレーター
 
-TODO: Delete this and the text below, and describe your gem
+## インストール
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/tsukuru`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-## Installation
-
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+アプリケーションの `Gemfile` に以下の行を追加してください：
+```ruby
+gem 'tsukuru', github: 'Hitoshi-Noborikawa/tsukuru', branch: 'main'
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+``` bash
+bundle install
 ```
 
-## Usage
+.env ファイルに以下の環境変数を追加してください：
+``` bash
+TSUKURU_OPEN_AI_ACCESS_TOKEN=
+```
 
-TODO: Write usage instructions here
+## 使い方
+### RSpecの生成
+以下のコマンドを実行すると、Railsアプリケーション用のRSpecテストのひな形を生成できます：
+```
+rails g tsukuru:rspec
+```
+- RSpecを作成するために必要なファイルを選別し、そのファイルを元にテストを生成します。
+- 生成対象のRSpecファイルが 存在しない場合 は新規作成されます。
+- 生成対象のRSpecファイルが 既に存在する場合 は上書きされます。
 
-## Development
+### READMEの生成
+以下のコマンドを実行すると、READMEファイルを自動生成できます：
+```
+rails g tsukuru:readme
+```
+- READMEを作成するために必要なファイルを選別し、そのファイルを元にREADMEを生成します。
+- READMEファイルが 存在しない場合 は新規作成されます。
+- READMEファイルが 既に存在する場合 は上書きされます。
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+### AIによるファイル生成
+Tsukuruは OpenAIの gpt-4o-mini モデル を使用してRSpecとREADMEを生成します。
+ファイルを生成する際、品質を向上させるため 最大4回のリクエスト をOpenAIに送信します。
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+#### .tsukururules を使ったカスタマイズ
+生成時のプロンプトをカスタマイズするには、 .tsukururules にルールを追加できます。
 
-## Contributing
+##### .tsukururules の作成手順
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/ichiroc/tsukuru.
+1. プロジェクトのルートディレクトリに .tsukururules ファイルを作成します。
+2. RSpecやREADMEの生成をカスタマイズするためのプロンプトを追加します
+
+##### .tsukururules の例
+.tsukururules
+``` bash
+作成するテストはsystemスペックのみ作成してください。
+準備するデータはインスタンス変数ではなく、できるだけletを使用してください。
+visitの後は1行インデントを開けてください。
+
+トラブルシューティングのセクションを含めてください。
+```
+
+### Contributing
+バグを発見した場合や改善の提案がある場合は、プルリクエストを送ってください。
+
+### License
+The gem is available as open source under the terms of the MIT License.
