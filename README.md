@@ -1,6 +1,8 @@
 # Tsukuru
 RSpecテストとREADMEファイルを簡単に作成できるジェネレーター
+
 Tsukuruは OpenAIの gpt-4o-mini モデル を使用してRSpecとREADMEを生成します。
+
 ファイルを生成する際、品質を向上させるため 最大4回のリクエスト をOpenAIに送信します。
 
 ## インストール
