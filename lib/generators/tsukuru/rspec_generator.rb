@@ -25,6 +25,8 @@ module Tsukuru
 
       prompt = lines.join("\n").strip
 
+      puts ''
+      puts 'Generating...'
       generate(prompt, contents(file_paths: INITIAL_FILES))
     rescue Interrupt
     end
@@ -32,10 +34,6 @@ module Tsukuru
     private
 
     def generate(prompt, file_contents, count = 0)
-      puts ''
-      puts 'Generating...'
-      puts ''
-
       response = client.chat(
         messages: [
           { role: 'system', content: <<~CONTENT },
@@ -133,13 +131,11 @@ module Tsukuru
     end
 
     def contents(file_paths:)
-      puts 'Retriving file contenst...'
-
       paths = file_paths - @loaded_file_paths
       paths.each do |path|
-        @loaded_file_paths << path
         puts "- #{path}"
       end
+      @loaded_file_paths += paths
       Tsukuru::FileInspector.contents(paths).map do
         <<~CONTENT
 
