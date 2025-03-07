@@ -37,6 +37,7 @@ module Tsukuru
 
       user_prompt = lines.join("\n").strip
 
+      puts 'Generating...'
       generate(user_prompt, contents(file_paths: INITIAL_FILES))
     rescue Interrupt
     end
@@ -44,9 +45,6 @@ module Tsukuru
     private
 
     def generate(user_prompt, contents, count = 0)
-      puts ''
-      puts 'Generating...'
-      puts ''
       response = client.chat(
         messages: [
           { role: 'system', content: <<~CONTENT },
