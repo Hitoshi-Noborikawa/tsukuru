@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# lib/file_inspector.rb
+require 'find'
 
 module Tsukuru
   class FileInspector
