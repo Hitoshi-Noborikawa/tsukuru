@@ -16,8 +16,14 @@ module Tsukuru
 
     def chat(parameters)
       @client.chat(
-        parameters: { model: 'gpt-4o-mini' }.merge(parameters)
+        parameters: { model: model }.merge(parameters)
       )
+    end
+
+    private
+
+    def model
+      ENV['TSUKURU_OPEN_AI_MODEL'] ? ENV['TSUKURU_OPEN_AI_MODEL'] : 'gpt-4o-mini'
     end
   end
 end
