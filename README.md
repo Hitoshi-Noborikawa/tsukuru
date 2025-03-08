@@ -19,7 +19,9 @@ bundle install
 .env ファイルに以下の環境変数を追加してください：
 ``` bash
 TSUKURU_OPEN_AI_ACCESS_TOKEN=
+TSUKURU_OPEN_AI_MODEL=
 ```
+TSUKURU_OPEN_AI_MODELが設定されていない場合はデフォルトで`gpt-4o-mini`が使用されます。
 
 ## 使い方
 ### RSpecの生成
